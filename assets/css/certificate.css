@@ -1,0 +1,291 @@
+/* ==============================================================================
+   AWT Intern Management System (AWT-IMS)
+   Certificate & Offer Letter Stylesheet
+   Faithfully inspired by the original Access "Certificate IBA" report
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+
+/* Certificate Outer Frame */
+.certificate-preview-wrapper {
+    background: #475569;
+    padding: 2.5rem 1rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.certificate-actions {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.certificate-sheet {
+    width: 297mm;
+    min-height: 210mm;
+    background: #ffffff;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    padding: 14mm 16mm;
+    box-sizing: border-box;
+    position: relative;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Ornate Border */
+.certificate-border {
+    border: 3px double #1e3a8a;
+    outline: 8px solid #f1f5f9;
+    padding: 10mm 12mm;
+    height: 100%;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-image: 
+        radial-gradient(circle at 50% 50%, rgba(30, 58, 138, 0.02) 0%, transparent 80%),
+        linear-gradient(to right, rgba(217, 119, 6, 0.03), transparent 20%, transparent 80%, rgba(217, 119, 6, 0.03));
+}
+
+.certificate-corner-tl, .certificate-corner-tr,
+.certificate-corner-bl, .certificate-corner-br {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: #d97706;
+}
+
+.certificate-corner-tl { top: -2px; left: -2px; border-top: 4px solid #d97706; border-left: 4px solid #d97706; }
+.certificate-corner-tr { top: -2px; right: -2px; border-top: 4px solid #d97706; border-right: 4px solid #d97706; }
+.certificate-corner-bl { bottom: -2px; left: -2px; border-bottom: 4px solid #d97706; border-left: 4px solid #d97706; }
+.certificate-corner-br { bottom: -2px; right: -2px; border-bottom: 4px solid #d97706; border-right: 4px solid #d97706; }
+
+/* Certificate Header */
+.cert-header {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.cert-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.cert-emblem {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    border: 2px solid #d97706;
+}
+
+.cert-org-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #1e3a8a;
+    letter-spacing: 0.04em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.cert-org-sub {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #d97706;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-top: 0.15rem;
+}
+
+.cert-title-wrap {
+    margin-top: 1rem;
+    position: relative;
+    text-align: center;
+}
+
+.cert-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.12em;
+    display: inline-block;
+    padding: 0.25rem 2rem;
+    border-top: 1px solid #cbd5e1;
+    border-bottom: 1px solid #cbd5e1;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* Certificate Body Text */
+.cert-body {
+    text-align: center;
+    padding: 0 2rem;
+    font-family: 'Playfair Display', serif;
+}
+
+.cert-presented {
+    font-size: 1rem;
+    font-style: italic;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.cert-student-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.3rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin: 0.25rem 0;
+    border-bottom: 1px solid #d97706;
+    display: inline-block;
+    padding: 0 2.5rem 0.25rem;
+    letter-spacing: -0.01em;
+}
+
+.cert-narrative {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.98rem;
+    line-height: 1.85;
+    color: #334155;
+    margin: 1rem auto;
+    max-width: 90%;
+}
+
+.cert-highlight {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Certificate Footer & Signatures */
+.cert-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 1rem;
+    margin-top: 1rem;
+}
+
+.cert-sig-block {
+    text-align: center;
+    width: 220px;
+}
+
+.cert-sig-line {
+    border-top: 1px solid #1e293b;
+    margin-bottom: 0.4rem;
+}
+
+.cert-sig-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #1e3a8a;
+    margin: 0;
+}
+
+.cert-sig-title {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cert-qr-block {
+    text-align: center;
+}
+
+.cert-qr-box {
+    width: 70px;
+    height: 70px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: #64748b;
+    background: #ffffff;
+    margin: 0 auto 0.25rem;
+}
+
+.cert-no {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* Printable Offer Letter Styles */
+.letter-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 20mm 20mm;
+    box-sizing: border-box;
+    margin: 0 auto;
+    color: #1e293b;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.letter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.letter-body {
+    white-space: pre-line;
+}
+
+/* Strict Print Rules */
+@media print {
+    body, html {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .certificate-preview-wrapper {
+        background: transparent !important;
+        padding: 0 !important;
+    }
+    .certificate-actions, .app-sidebar, .app-topbar {
+        display: none !important;
+    }
+    .certificate-sheet {
+        box-shadow: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        page-break-after: always;
+    }
+    .letter-sheet {
+        box-shadow: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        page-break-after: always;
+    }
+    @page {
+        size: A4 landscape;
+        margin: 0mm;
+    }
+}

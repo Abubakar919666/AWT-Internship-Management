@@ -1,0 +1,43 @@
+# ==============================================================================
+# AWT Intern Management System (AWT-IMS)
+# Apache / Plesk Web Server Configuration
+# ==============================================================================
+
+# 1. Enable UTF-8 as default charset
+AddDefaultCharset UTF-8
+
+# 2. Prevent directory indexing / directory listing
+Options -Indexes
+
+# 3. Protect sensitive files and databases from direct web download
+<FilesMatch "\.(accdb|laccdb|sql|log|ini|env|sh|ps1)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 4. Protect config directory from direct browser listing
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^database/ - [F,L]
+</IfModule>
+
+# 5. Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 6. PHP Execution Settings (if supported via mod_php)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>

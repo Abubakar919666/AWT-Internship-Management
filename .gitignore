@@ -1,0 +1,28 @@
+# Environment and Local Configs
+.env
+.env.local
+config/database.local.php
+
+# Microsoft Access Database Files (remove or comment out if you wish to track them)
+*.laccdb
+~$*.accdb
+
+# Uploads directory (keep directory via .gitkeep, ignore uploaded files)
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# System & OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# IDE and Editor Directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Log files
+*.log
