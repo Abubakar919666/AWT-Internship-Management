@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
                     <input type="text" name="login_input" class="form-control border-start-0" 
                            placeholder="e.g. admin@awt.org or Intern ID" 
-                           value="<?= e($_POST['login_input'] ?? ($selectedRole === 'admin' ? 'admin@awt.org' : ($selectedRole === 'supervisor' ? 'supervisor@awt.org' : ''))); ?>" required autofocus>
+                           value="<?= e($_POST['login_input'] ?? ''); ?>" required autofocus>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
                     <input type="password" name="password" class="form-control border-start-0" 
                            placeholder="Enter your password" 
-                           value="<?= $selectedRole === 'admin' ? 'admin123' : ($selectedRole === 'supervisor' ? 'supervisor123' : ''); ?>" required>
+                           value="" required>
                 </div>
             </div>
 
@@ -187,23 +187,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-sign-in-alt me-1"></i> Sign In to Portal
             </button>
         </form>
-
-        <!-- Initial Demo Credentials Callout -->
-        <div class="mt-4 p-3 bg-light rounded-3 border small">
-            <div class="fw-bold text-dark mb-1"><i class="fas fa-key text-warning me-1"></i> Default System Access:</div>
-            <div class="d-flex justify-content-between text-muted mb-1">
-                <span><strong>Admin:</strong> admin@awt.org</span>
-                <code>admin123</code>
-            </div>
-            <div class="d-flex justify-content-between text-muted mb-1">
-                <span><strong>Supervisor:</strong> supervisor@awt.org</span>
-                <code>supervisor123</code>
-            </div>
-            <div class="d-flex justify-content-between text-muted">
-                <span><strong>Intern:</strong> Enter Intern ID (e.g. 56)</span>
-                <code>intern123</code>
-            </div>
-        </div>
 
         <div class="text-center mt-3">
             <a href="index.php" class="text-decoration-none small text-muted"><i class="fas fa-arrow-left me-1"></i> Back to Home</a>
