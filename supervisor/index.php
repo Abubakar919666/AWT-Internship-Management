@@ -14,46 +14,61 @@ require_supervisor();
 $pageTitle = 'Supervisor Dashboard';
 $pageSubtitle = 'Monitor assigned interns, review tasks, and record evaluations';
 
-$user = current_user();
-$supervisorId = $user['supervisor_id'];
+$supContext = get_active_supervisor_context();
+$activeSup = $supContext['supervisor'];
+$isAll = $supContext['is_all'];
+$allSupervisors = $supContext['all_supervisors'];
 
-// If supervisor_id not linked directly, find by user email or name
-if (!$supervisorId) {
-    $supRow = db_fetch_one("SELECT id FROM supervisors WHERE email = ? OR user_id = ? LIMIT 1", [$user['email'], $user['id']]);
-    if ($supRow) $supervisorId = (int)$supRow['id'];
+// Fetch stats according to active supervisor or all
+if ($isAll) {
+    $internCount = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM interns")['c'] ?? 0);
+    $pendingTasks = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM tasks WHERE status IN ('Pending', 'Under Review', 'In Progress')")['c'] ?? 0);
+    $assignedInterns = db_fetch_all("
+        SELECT id, sname, sInstitute, Degree, dateassignfrom, dateassignto, status, punctuality, Mentor, supervisor_id,
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
+        FROM interns
+        ORDER BY id DESC
+        LIMIT 10
+    ");
+    $reviewTasks = db_fetch_all("
+        SELECT t.*, i.sname AS intern_name
+        FROM tasks t
+        JOIN interns i ON t.intern_id = i.id
+        WHERE t.status = 'Under Review'
+        ORDER BY t.id DESC
+        LIMIT 5
+    ");
+} else {
+    $internCount = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM interns WHERE supervisor_id = ? OR Mentor LIKE ?", $supContext['filter_params'])['c'] ?? 0);
+    $pendingTasks = (int)(db_fetch_one("
+        SELECT COUNT(*) AS c 
+        FROM tasks t 
+        JOIN interns i ON t.intern_id = i.id 
+        WHERE (i.supervisor_id = ? OR t.supervisor_id = ?) AND t.status IN ('Pending', 'Under Review', 'In Progress')
+    ", [$activeSup['id'], $activeSup['id']])['c'] ?? 0);
+    $assignedInterns = db_fetch_all("
+        SELECT id, sname, sInstitute, Degree, dateassignfrom, dateassignto, status, punctuality, Mentor, supervisor_id,
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
+        FROM interns
+        WHERE supervisor_id = ? OR Mentor LIKE ?
+        ORDER BY id DESC
+        LIMIT 10
+    ", $supContext['filter_params']);
+    $reviewTasks = db_fetch_all("
+        SELECT t.*, i.sname AS intern_name
+        FROM tasks t
+        JOIN interns i ON t.intern_id = i.id
+        WHERE (i.supervisor_id = ? OR t.supervisor_id = ?) AND t.status = 'Under Review'
+        ORDER BY t.id DESC
+        LIMIT 5
+    ", [$activeSup['id'], $activeSup['id']]);
 }
-
-// Fetch stats for this supervisor's interns
-$internCount = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM interns WHERE supervisor_id = ? OR Mentor LIKE ?", [$supervisorId, "%{$user['name']}%"])['c'] ?? 0);
-$pendingTasks = (int)(db_fetch_one("
-    SELECT COUNT(*) AS c 
-    FROM tasks t 
-    JOIN interns i ON t.intern_id = i.id 
-    WHERE (i.supervisor_id = ? OR t.supervisor_id = ?) AND t.status IN ('Pending', 'Under Review', 'In Progress')
-", [$supervisorId, $supervisorId])['c'] ?? 0);
-
-// Fetch assigned interns
-$assignedInterns = db_fetch_all("
-    SELECT id, sname, sInstitute, Degree, dateassignfrom, dateassignto, status, punctuality,
-           (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
-    FROM interns
-    WHERE supervisor_id = ? OR Mentor LIKE ?
-    ORDER BY id DESC
-    LIMIT 10
-", [$supervisorId, "%{$user['name']}%"]);
-
-// Fetch pending task reviews
-$reviewTasks = db_fetch_all("
-    SELECT t.*, i.sname AS intern_name
-    FROM tasks t
-    JOIN interns i ON t.intern_id = i.id
-    WHERE (i.supervisor_id = ? OR t.supervisor_id = ?) AND t.status = 'Under Review'
-    ORDER BY t.id DESC
-    LIMIT 5
-", [$supervisorId, $supervisorId]);
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
+<!-- Supervisor Switcher Ribbon -->
+<?php render_supervisor_switcher_ribbon($supContext); ?>
 
 <!-- Supervisor KPIs -->
 <div class="row g-3 mb-4">
@@ -64,7 +79,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <div class="kpi-info">
                 <h3><?= $internCount; ?></h3>
-                <p>Assigned Interns</p>
+                <p><?= $isAll ? 'Total Supervised Interns' : 'Assigned Interns'; ?></p>
             </div>
         </div>
     </div>
@@ -99,7 +114,10 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="col-lg-8">
         <div class="awt-table-container">
             <div class="p-3 d-flex justify-content-between align-items-center bg-white border-bottom">
-                <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-users text-primary me-2"></i>My Supervised Interns</h5>
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    <?= $isAll ? 'All Supervised Interns' : 'My Supervised Interns (' . e($activeSup['name']) . ')'; ?>
+                </h5>
                 <a href="interns.php" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="table-responsive">
@@ -109,6 +127,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <th>ID</th>
                             <th>Student Name</th>
                             <th>Institute</th>
+                            <?php if ($isAll): ?><th>Mentor / Dept</th><?php endif; ?>
                             <th>Tenure Period</th>
                             <th>Appraisal</th>
                             <th class="text-end">Actions</th>
@@ -117,7 +136,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <tbody>
                         <?php if (empty($assignedInterns)): ?>
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="<?= $isAll ? 7 : 6; ?>" class="text-center py-4 text-muted">
                                     No interns currently assigned. Administrators can assign interns from the Admin portal.
                                 </td>
                             </tr>
@@ -130,6 +149,14 @@ require_once __DIR__ . '/../includes/header.php';
                                         <div class="small fw-semibold"><?= e($intern['sInstitute'] ?: '—'); ?></div>
                                         <small class="text-muted"><?= e($intern['Degree'] ?: '—'); ?></small>
                                     </td>
+                                    <?php if ($isAll): ?>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                <i class="fas fa-user-tie text-primary me-1"></i>
+                                                <?= e($intern['Mentor'] ?: 'Unassigned'); ?>
+                                            </span>
+                                        </td>
+                                    <?php endif; ?>
                                     <td class="small text-muted">
                                         <?= format_date($intern['dateassignfrom']); ?> &rarr; <?= format_date($intern['dateassignto']); ?>
                                     </td>

@@ -24,6 +24,9 @@ if (!$intern) {
     exit;
 }
 
+ensure_intern_photo_column();
+$photoUrl = intern_photo_url($intern['photo'] ?? null);
+
 $pageTitle = 'My Profile';
 $pageSubtitle = 'Academic details, contact information, and document checklist';
 
@@ -34,9 +37,27 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="col-lg-10">
         <!-- Personal Details Card -->
         <div class="awt-card mb-4">
-            <div class="card-header-clean">
-                <h5><i class="fas fa-user-graduate text-primary"></i> Academic & Personal Information</h5>
-                <span class="badge bg-light text-muted border">Intern #<?= $intern['id']; ?></span>
+            <div class="card-header-clean d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <?php if ($photoUrl): ?>
+                        <img src="../<?= e($photoUrl); ?>" alt="<?= e($intern['sname']); ?>" 
+                             class="rounded-4 border shadow-sm" style="width:65px;height:65px;object-fit:cover;">
+                    <?php else: ?>
+                        <div class="rounded-4 bg-light border text-primary d-flex align-items-center justify-content-center" 
+                             style="width:65px;height:65px;font-size:1.8rem;">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                    <?php endif; ?>
+                    <div>
+                        <h5 class="mb-0"><i class="fas fa-user-graduate text-primary me-2"></i>Academic & Personal Information</h5>
+                        <span class="badge bg-light text-muted border">Intern #<?= $intern['id']; ?></span>
+                    </div>
+                </div>
+                <div>
+                    <a href="../admin/id_card.php?id=<?= $intern['id']; ?>" class="btn btn-outline-success btn-sm fw-bold" target="_blank">
+                        <i class="fas fa-id-badge me-1"></i> View My ID Card
+                    </a>
+                </div>
             </div>
 
             <div class="row g-3">
@@ -99,11 +120,14 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="fas fa-portrait text-info me-2"></i><strong>Passport Photograph</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-portrait text-info me-1"></i><strong>Passport Photograph</strong>
+                            <?php if ($photoUrl): ?>
+                                <img src="../<?= e($photoUrl); ?>" alt="Thumbnail" class="rounded-circle border ms-1" style="width:28px;height:28px;object-fit:cover;">
+                            <?php endif; ?>
                         </div>
-                        <span class="badge bg-<?= $intern['Photograph'] ? 'success' : 'secondary'; ?>">
-                            <?= $intern['Photograph'] ? 'Verified' : 'Not Submitted'; ?>
+                        <span class="badge bg-<?= ($intern['Photograph'] || $photoUrl) ? 'success' : 'secondary'; ?>">
+                            <?= ($intern['Photograph'] || $photoUrl) ? 'Verified & Uploaded' : 'Not Submitted'; ?>
                         </span>
                     </div>
                 </div>

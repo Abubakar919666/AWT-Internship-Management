@@ -126,6 +126,7 @@ CREATE TABLE `interns` (
     `Recommendation_Letter` TINYINT(1) NOT NULL DEFAULT 0,
     `CNIC_copy` TINYINT(1) NOT NULL DEFAULT 0,
     `Student_ID` TINYINT(1) NOT NULL DEFAULT 0,
+    `photo` VARCHAR(255) NULL,
     
     -- Performance Appraisal Scores (1 to 10 scale)
     `punctuality` INT DEFAULT 0,

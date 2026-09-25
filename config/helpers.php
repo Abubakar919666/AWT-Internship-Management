@@ -250,3 +250,394 @@ function handle_file_upload(array $file, string $targetSubdir = 'uploads'): arra
         'filename'      => $finalFilename
     ];
 }
+
+/**
+ * Ensure `photo` column exists in `interns` table
+ */
+function ensure_intern_photo_column(): void {
+    static $checked = false;
+    if ($checked) return;
+    try {
+        $cols = db_fetch_all("SHOW COLUMNS FROM interns LIKE 'photo'");
+        if (empty($cols)) {
+            get_db()->exec("ALTER TABLE interns ADD COLUMN `photo` VARCHAR(255) NULL AFTER `Student_ID`");
+        }
+        $checked = true;
+    } catch (Exception $e) {
+        $checked = true;
+    }
+}
+
+/**
+ * Handle base64 encoded image upload (from webcam, camera scan, or cropped canvas)
+ */
+function handle_base64_image_upload(string $dataUri, string $targetSubdir = 'uploads/photos', string $prefix = 'photo_'): array {
+    if (!preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/is', $dataUri, $matches)) {
+        return ['success' => false, 'error' => 'Invalid image format data.'];
+    }
+
+    $ext = strtolower($matches[1]);
+    if ($ext === 'jpeg') $ext = 'jpg';
+    $rawBase64 = str_replace(' ', '+', $matches[2]);
+    $imageData = base64_decode($rawBase64);
+
+    if ($imageData === false || strlen($imageData) < 100) {
+        return ['success' => false, 'error' => 'Failed to decode captured image data.'];
+    }
+
+    if (strlen($imageData) > 8 * 1024 * 1024) {
+        return ['success' => false, 'error' => 'Image exceeds 8MB size limit.'];
+    }
+
+    $uploadDir = __DIR__ . '/../assets/' . $targetSubdir;
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $filename = $prefix . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $targetPath = $uploadDir . '/' . $filename;
+
+    if (file_put_contents($targetPath, $imageData) === false) {
+        return ['success' => false, 'error' => 'Failed to write image file to disk. Check permissions.'];
+    }
+
+    return [
+        'success'       => true,
+        'relative_path' => 'assets/' . $targetSubdir . '/' . $filename,
+        'original_name' => 'camera_scan_' . date('Ymd_His') . '.' . $ext,
+        'filename'      => $filename
+    ];
+}
+
+/**
+ * Returns valid relative web path for an intern's photo, or null if missing/not found
+ */
+function intern_photo_url(?string $photoPath): ?string {
+    if (!empty($photoPath)) {
+        $clean = ltrim($photoPath, '/');
+        $fullPath = __DIR__ . '/../' . $clean;
+        if (file_exists($fullPath)) {
+            return $clean;
+        }
+    }
+    return null;
+}
+
+/**
+ * Ensure all department supervisors exist, are active, and have login accounts
+ */
+function ensure_all_supervisors_active(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+
+    try {
+        $supervisorsList = [
+            [
+                'id'          => 1,
+                'name'        => 'Muhammad Wali Saleem',
+                'email'       => 'supervisor@awt.org',
+                'username'    => 'wali.saleem',
+                'department'  => 'Coordination & Media',
+                'designation' => 'Officer - Coordination',
+                'phone'       => '+92-300-1234567',
+                'mentors'     => ['%Wali%', '%Saleem%']
+            ],
+            [
+                'id'          => 2,
+                'name'        => 'Abdul Latif',
+                'email'       => 'latif@awt.org',
+                'username'    => 'abdul.latif',
+                'department'  => 'Operations & Social Work',
+                'designation' => 'Senior Supervisor',
+                'phone'       => '+92-300-7654321',
+                'mentors'     => ['%Latif%']
+            ],
+            [
+                'id'          => 3,
+                'name'        => 'Muhammad Amir',
+                'email'       => 'amir@awt.org',
+                'username'    => 'muhammad.amir',
+                'department'  => 'Health & OPD Unit',
+                'designation' => 'Department Supervisor',
+                'phone'       => '+92-300-9988776',
+                'mentors'     => ['%Amir%']
+            ],
+            [
+                'id'          => 4,
+                'name'        => 'Sohail Ahmed Khan',
+                'email'       => 'sohail@awt.org',
+                'username'    => 'sohail.khan',
+                'department'  => 'Administration',
+                'designation' => 'Assistant Coordinator',
+                'phone'       => '+92-300-5544332',
+                'mentors'     => ['%Sohail%']
+            ],
+            [
+                'id'          => 5,
+                'name'        => 'Umer Qureshi',
+                'email'       => 'umer@awt.org',
+                'username'    => 'umer.qureshi',
+                'department'  => 'Marketing & Public Relations',
+                'designation' => 'Officer - Coordination',
+                'phone'       => '+92-300-4433221',
+                'mentors'     => ['%Umer%', '%Qureshi%']
+            ],
+            [
+                'id'          => 6,
+                'name'        => 'Niaz Khan',
+                'email'       => 'niaz@awt.org',
+                'username'    => 'niaz.khan',
+                'department'  => 'Field Operations & Logistics',
+                'designation' => 'Field Supervisor',
+                'phone'       => '+92-300-3322110',
+                'mentors'     => ['%Niaz%']
+            ],
+            [
+                'id'          => 7,
+                'name'        => 'Nisar Ahmed',
+                'email'       => 'nisar@awt.org',
+                'username'    => 'nisar.ahmed',
+                'department'  => 'HR & Internship Coordination',
+                'designation' => 'HR Coordinator',
+                'phone'       => '+92-300-1122334',
+                'mentors'     => ['%Nisar%']
+            ]
+        ];
+
+        $defaultHash = '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm'; // supervisor123
+
+        foreach ($supervisorsList as $s) {
+            // 1. Ensure supervisor record in `supervisors`
+            $sup = db_fetch_one("SELECT * FROM supervisors WHERE id = ? OR email = ? OR name = ? LIMIT 1", [$s['id'], $s['email'], $s['name']]);
+            $supId = null;
+
+            if ($sup) {
+                $supId = (int)$sup['id'];
+                db_query("UPDATE supervisors SET name = ?, email = ?, phone = ?, department = ?, designation = ?, is_active = 1 WHERE id = ?", [
+                    $s['name'], $s['email'], $s['phone'], $s['department'], $s['designation'], $supId
+                ]);
+            } else {
+                db_query("INSERT INTO supervisors (id, name, email, phone, department, designation, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)", [
+                    $s['id'], $s['name'], $s['email'], $s['phone'], $s['department'], $s['designation']
+                ]);
+                $supId = $s['id'];
+            }
+
+            // 2. Ensure user account in `users`
+            $u = db_fetch_one("SELECT * FROM users WHERE email = ? OR username = ? OR supervisor_id = ? LIMIT 1", [$s['email'], $s['username'], $supId]);
+            $userId = null;
+
+            if ($u) {
+                $userId = (int)$u['id'];
+                db_query("UPDATE users SET name = ?, email = ?, username = ?, role = 'supervisor', supervisor_id = ?, status = 'active' WHERE id = ?", [
+                    $s['name'], $s['email'], $s['username'], $supId, $userId
+                ]);
+            } else {
+                db_query("INSERT INTO users (name, email, username, password_hash, role, supervisor_id, status) VALUES (?, ?, ?, ?, 'supervisor', ?, 'active')", [
+                    $s['name'], $s['email'], $s['username'], $defaultHash, $supId
+                ]);
+                $userId = (int)db_last_insert_id();
+            }
+
+            // Link user_id in supervisors
+            db_query("UPDATE supervisors SET user_id = ? WHERE id = ?", [$userId, $supId]);
+
+            // Link unassigned matching interns to this supervisor_id
+            foreach ($s['mentors'] as $pattern) {
+                db_query("UPDATE interns SET supervisor_id = ? WHERE (supervisor_id IS NULL OR supervisor_id = 0) AND Mentor LIKE ?", [$supId, $pattern]);
+            }
+        }
+    } catch (Exception $e) {
+        // Silently continue
+    }
+}
+
+/**
+ * Get active supervisor context for supervisor dashboard & pages
+ * Supports switching between individual supervisors and "All Supervisors (Consolidated View)" mode.
+ */
+function get_active_supervisor_context(): array {
+    ensure_all_supervisors_active();
+
+    // Check if switch requested via GET
+    if (isset($_GET['switch_supervisor'])) {
+        $req = trim($_GET['switch_supervisor']);
+        $_SESSION['active_supervisor_id'] = $req;
+    }
+
+    $allSupervisors = db_fetch_all("
+        SELECT s.*, u.username,
+               (SELECT COUNT(*) FROM interns WHERE supervisor_id = s.id OR Mentor LIKE CONCAT('%', s.name, '%')) AS intern_count
+        FROM supervisors s
+        LEFT JOIN users u ON u.id = s.user_id
+        WHERE s.is_active = 1
+        ORDER BY s.id ASC
+    ");
+
+    $user = current_user();
+    $activeKey = $_SESSION['active_supervisor_id'] ?? null;
+
+    // 1. All Supervisors mode
+    if ($activeKey === 'all') {
+        $totalInterns = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM interns")['c'] ?? 0);
+        return [
+            'is_all'          => true,
+            'active_id'       => 'all',
+            'supervisor'      => [
+                'id'          => 'all',
+                'name'        => 'All Supervisors (Consolidated View)',
+                'department'  => 'All Departments',
+                'designation' => 'Executive Management',
+                'email'       => 'All Supervisors Active',
+                'phone'       => 'All Lines',
+                'intern_count'=> $totalInterns
+            ],
+            'all_supervisors' => $allSupervisors,
+            'filter_sql'      => '1=1',
+            'filter_params'   => []
+        ];
+    }
+
+    // 2. Specific supervisor by ID requested in session
+    if ($activeKey !== null && is_numeric($activeKey)) {
+        $targetId = (int)$activeKey;
+        foreach ($allSupervisors as $sup) {
+            if ((int)$sup['id'] === $targetId) {
+                return [
+                    'is_all'          => false,
+                    'active_id'       => $targetId,
+                    'supervisor'      => $sup,
+                    'all_supervisors' => $allSupervisors,
+                    'filter_sql'      => '(supervisor_id = ? OR Mentor LIKE ?)',
+                    'filter_params'   => [$targetId, "%{$sup['name']}%"]
+                ];
+            }
+        }
+    }
+
+    // 3. Default to current logged-in user's assigned supervisor profile
+    if ($user && !empty($user['supervisor_id'])) {
+        foreach ($allSupervisors as $sup) {
+            if ((int)$sup['id'] === (int)$user['supervisor_id']) {
+                return [
+                    'is_all'          => false,
+                    'active_id'       => (int)$sup['id'],
+                    'supervisor'      => $sup,
+                    'all_supervisors' => $allSupervisors,
+                    'filter_sql'      => '(supervisor_id = ? OR Mentor LIKE ?)',
+                    'filter_params'   => [(int)$sup['id'], "%{$sup['name']}%"]
+                ];
+            }
+        }
+    }
+
+    // 4. Default fallback: All Supervisors or first supervisor
+    if (!empty($allSupervisors)) {
+        $first = $allSupervisors[0];
+        return [
+            'is_all'          => false,
+            'active_id'       => (int)$first['id'],
+            'supervisor'      => $first,
+            'all_supervisors' => $allSupervisors,
+            'filter_sql'      => '(supervisor_id = ? OR Mentor LIKE ?)',
+            'filter_params'   => [(int)$first['id'], "%{$first['name']}%"]
+        ];
+    }
+
+    return [
+        'is_all'          => true,
+        'active_id'       => 'all',
+        'supervisor'      => [
+            'id'          => 'all',
+            'name'        => 'All Supervisors',
+            'department'  => 'Coordination',
+            'designation' => 'Supervisor',
+            'intern_count'=> 0
+        ],
+        'all_supervisors' => [],
+        'filter_sql'      => '1=1',
+        'filter_params'   => []
+    ];
+}
+
+/**
+ * Render supervisor switcher banner ribbon
+ */
+function render_supervisor_switcher_ribbon(array $context, string $targetAction = ''): void {
+    $activeSup = $context['supervisor'];
+    $isAll = $context['is_all'];
+    $activeId = $context['active_id'];
+    $allSupervisors = $context['all_supervisors'];
+    ?>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;background:linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);border:1px solid #bfdbfe !important;">
+        <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center <?= $isAll ? 'bg-warning text-dark' : 'bg-primary text-white'; ?> shadow-sm" style="width:46px;height:46px;font-size:1.25rem;">
+                    <i class="fas <?= $isAll ? 'fa-layer-group' : 'fa-user-tie'; ?>"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge <?= $isAll ? 'bg-warning text-dark' : 'bg-primary'; ?> text-uppercase px-2 py-1" style="font-size:10px;letter-spacing:0.5px;">
+                            <i class="fas fa-check-circle me-1"></i>Active Supervisor View
+                        </span>
+                        <span class="text-muted small fw-semibold"><?= $isAll ? 'All Departments' : e($activeSup['department'] ?? 'Department'); ?></span>
+                    </div>
+                    <h5 class="mb-0 fw-bold text-dark mt-1">
+                        <?= e($activeSup['name']); ?>
+                        <span class="text-primary small fw-semibold ms-2">(<?= (int)($activeSup['intern_count'] ?? 0); ?> Interns Assigned)</span>
+                    </h5>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center flex-wrap gap-2 ms-auto">
+                <span class="small fw-bold text-secondary text-nowrap"><i class="fas fa-exchange-alt me-1 text-primary"></i>Switch Supervisor:</span>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-white border fw-bold dropdown-toggle shadow-sm px-3 py-2 bg-white" data-bs-toggle="dropdown" aria-expanded="false" style="min-width:240px;text-align:left;">
+                        <i class="fas <?= $isAll ? 'fa-layer-group text-warning' : 'fa-user-tie text-primary'; ?> me-2"></i>
+                        <span class="text-truncate" style="max-width:180px;display:inline-block;vertical-align:bottom;">
+                            <?= e($activeSup['name']); ?>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:320px;border-radius:12px;padding:8px;">
+                        <li class="dropdown-header text-uppercase small fw-bold text-muted" style="font-size:11px;">
+                            <i class="fas fa-users-cog me-1 text-primary"></i> Select Active Supervisor
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded <?= $isAll ? 'active fw-bold' : ''; ?>" 
+                               href="?switch_supervisor=all">
+                                <span><i class="fas fa-layer-group me-2 text-warning"></i><strong>All Supervisors (Consolidated)</strong></span>
+                                <?php if ($isAll): ?><i class="fas fa-check text-primary"></i><?php endif; ?>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <?php foreach ($allSupervisors as $s): ?>
+                            <?php $selected = (!$isAll && (int)$activeId === (int)$s['id']); ?>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded <?= $selected ? 'active fw-bold' : ''; ?>" 
+                                   href="?switch_supervisor=<?= $s['id']; ?>">
+                                    <div>
+                                        <div class="fw-semibold">
+                                            <i class="fas fa-user-tie me-2 <?= $selected ? 'text-primary' : 'text-secondary'; ?>"></i>
+                                            <?= e($s['name']); ?>
+                                        </div>
+                                        <small class="text-muted d-block ms-4" style="font-size:11px;">
+                                            <?= e($s['department']); ?> &bull; <?= (int)$s['intern_count']; ?> interns
+                                        </small>
+                                    </div>
+                                    <?php if ($selected): ?><i class="fas fa-check text-primary ms-2"></i><?php endif; ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <a href="?switch_supervisor=all" class="btn btn-sm <?= $isAll ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary'; ?> shadow-sm py-2">
+                    <i class="fas fa-globe me-1"></i> View All
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+

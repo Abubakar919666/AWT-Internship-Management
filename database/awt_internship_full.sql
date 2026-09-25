@@ -1,4 +1,4 @@
-﻿-- =======================================================
+-- =======================================================
 -- AWT Intern Management System (AWT-IMS)
 -- Database Schema for MySQL 8.0+ / MariaDB 10.4+
 -- Organization: Alamgir Welfare Trust Int'l (AWT)
@@ -126,6 +126,7 @@ CREATE TABLE `interns` (
     `Recommendation_Letter` TINYINT(1) NOT NULL DEFAULT 0,
     `CNIC_copy` TINYINT(1) NOT NULL DEFAULT 0,
     `Student_ID` TINYINT(1) NOT NULL DEFAULT 0,
+    `photo` VARCHAR(255) NULL,
     
     -- Performance Appraisal Scores (1 to 10 scale)
     `punctuality` INT DEFAULT 0,
@@ -295,21 +296,25 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 -- admin@awt.org -> admin123 (sha256 fallback: 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9)
 -- supervisor@awt.org -> supervisor123 (sha256 fallback: 5d1b790d7c3d2e1b12b3a164b3df3d537f8f0f089608447d6d338f0d80c3d9a9)
 -- intern@awt.org -> intern123 (sha256 fallback: 4e9e51e9e7b2ff9c4b7261a868a2bf61b9ad9c60e4eb0d738f654df8c1719c28)
-INSERT INTO `users` (`id`, `name`, `email`, `username`, `password_hash`, `role`, `status`) VALUES
-(1, 'System Administrator', 'admin@awt.org', 'admin', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'admin', 'active'),
-(2, 'Muhammad Wali Saleem', 'supervisor@awt.org', 'wali.saleem', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 'active'),
-(3, 'Abdul Latif', 'latif@awt.org', 'abdul.latif', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 'active');
+INSERT INTO `users` (`id`, `name`, `email`, `username`, `password_hash`, `role`, `supervisor_id`, `status`) VALUES
+(1, 'System Administrator', 'admin@awt.org', 'admin', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'admin', NULL, 'active'),
+(2, 'Muhammad Wali Saleem', 'supervisor@awt.org', 'wali.saleem', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 1, 'active'),
+(3, 'Abdul Latif', 'latif@awt.org', 'abdul.latif', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 2, 'active'),
+(4, 'Muhammad Amir', 'amir@awt.org', 'muhammad.amir', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 3, 'active'),
+(5, 'Sohail Ahmed Khan', 'sohail@awt.org', 'sohail.khan', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 4, 'active'),
+(6, 'Umer Qureshi', 'umer@awt.org', 'umer.qureshi', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 5, 'active'),
+(7, 'Niaz Khan', 'niaz@awt.org', 'niaz.khan', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 6, 'active'),
+(8, 'Nisar Ahmed', 'nisar@awt.org', 'nisar.ahmed', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'supervisor', 7, 'active');
 
 -- Supervisors Profile Records
 INSERT INTO `supervisors` (`id`, `user_id`, `name`, `email`, `phone`, `department`, `designation`, `is_active`) VALUES
 (1, 2, 'Muhammad Wali Saleem', 'supervisor@awt.org', '+92-300-1234567', 'Coordination & Media', 'Officer - Coordination', 1),
 (2, 3, 'Abdul Latif', 'latif@awt.org', '+92-300-7654321', 'Operations & Social Work', 'Senior Supervisor', 1),
-(3, NULL, 'Muhammad Amir', 'amir@awt.org', '+92-300-9988776', 'Health & OPD Unit', 'Department Supervisor', 1),
-(4, NULL, 'Sohail Ahmed Khan', 'sohail@awt.org', '+92-300-5544332', 'Administration', 'Assistant Coordinator', 1);
-
--- Link supervisor_id back to users
-UPDATE `users` SET `supervisor_id` = 1 WHERE `id` = 2;
-UPDATE `users` SET `supervisor_id` = 2 WHERE `id` = 3;
+(3, 4, 'Muhammad Amir', 'amir@awt.org', '+92-300-9988776', 'Health & OPD Unit', 'Department Supervisor', 1),
+(4, 5, 'Sohail Ahmed Khan', 'sohail@awt.org', '+92-300-5544332', 'Administration', 'Assistant Coordinator', 1),
+(5, 6, 'Umer Qureshi', 'umer@awt.org', '+92-300-4433221', 'Marketing & Public Relations', 'Officer - Coordination', 1),
+(6, 7, 'Niaz Khan', 'niaz@awt.org', '+92-300-3322110', 'Field Operations & Logistics', 'Field Supervisor', 1),
+(7, 8, 'Nisar Ahmed', 'nisar@awt.org', '+92-300-1122334', 'HR & Internship Coordination', 'HR Coordinator', 1);
 
 
 -- =======================================================

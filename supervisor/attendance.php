@@ -15,11 +15,9 @@ $pageTitle = 'Intern Attendance Sheet';
 $pageSubtitle = 'Record daily attendance for interns assigned to your department';
 
 $user = current_user();
-$supervisorId = $user['supervisor_id'];
-if (!$supervisorId) {
-    $supRow = db_fetch_one("SELECT id FROM supervisors WHERE email = ? OR user_id = ? LIMIT 1", [$user['email'], $user['id']]);
-    if ($supRow) $supervisorId = (int)$supRow['id'];
-}
+$supContext = get_active_supervisor_context();
+$activeSup = $supContext['supervisor'];
+$isAll = $supContext['is_all'];
 
 $selectedDate = sanitize($_GET['date'] ?? date('Y-m-d'));
 
@@ -52,12 +50,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch assigned interns
-$interns = db_fetch_all("
-    SELECT id, sname, sInstitute, Degree, Department
-    FROM interns
-    WHERE supervisor_id = ? OR Mentor LIKE ?
-    ORDER BY sname ASC
-", [$supervisorId, "%{$user['name']}%"]);
+if ($isAll) {
+    $interns = db_fetch_all("
+        SELECT id, sname, sInstitute, Degree, Department, Mentor
+        FROM interns
+        ORDER BY sname ASC
+    ");
+} else {
+    $interns = db_fetch_all("
+        SELECT id, sname, sInstitute, Degree, Department, Mentor
+        FROM interns
+        WHERE supervisor_id = ? OR Mentor LIKE ?
+        ORDER BY sname ASC
+    ", $supContext['filter_params']);
+}
 
 // Fetch existing attendance for this date
 $existingAttendance = [];
@@ -72,6 +78,9 @@ if (!empty($interns)) {
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
+<!-- Supervisor Switcher Ribbon -->
+<?php render_supervisor_switcher_ribbon($supContext); ?>
 
 <div class="row g-3 align-items-center mb-4">
     <div class="col-md-5">

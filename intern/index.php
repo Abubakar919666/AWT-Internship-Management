@@ -62,6 +62,9 @@ $totalScore = (int)(
 );
 $gradeInfo = calculate_grade($totalScore);
 
+ensure_intern_photo_column();
+$userPhoto = intern_photo_url($intern['photo'] ?? null);
+
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -69,16 +72,27 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="awt-card p-4 text-white mb-4" style="background:linear-gradient(135deg, #1e3a8a 0%, #0d9488 100%);">
     <div class="row align-items-center">
         <div class="col-md-8">
-            <span class="badge bg-warning text-dark mb-2 fw-bold">Internship Session <?= e($intern['iyear'] ?: date('Y')); ?></span>
-            <h2 class="fw-bold mb-1">Welcome, <?= e($intern['sname']); ?>!</h2>
-            <p class="mb-0 text-white-50">
-                <?= e($intern['sInstitute']); ?> &bull; <?= e($intern['Degree'] ?: 'Undergraduate'); ?> &bull;
-                Tenure: <?= format_date($intern['dateassignfrom']); ?> &rarr; <?= format_date($intern['dateassignto']); ?>
-            </p>
+            <div class="d-flex align-items-center gap-3">
+                <?php if ($userPhoto): ?>
+                    <img src="../<?= e($userPhoto); ?>" alt="<?= e($intern['sname']); ?>" 
+                         class="rounded-4 border border-2 border-white shadow-sm flex-shrink-0" style="width:68px;height:68px;object-fit:cover;">
+                <?php endif; ?>
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 fw-bold">Internship Session <?= e($intern['iyear'] ?: date('Y')); ?></span>
+                    <h2 class="fw-bold mb-1">Welcome, <?= e($intern['sname']); ?>!</h2>
+                    <p class="mb-0 text-white-50">
+                        <?= e($intern['sInstitute']); ?> &bull; <?= e($intern['Degree'] ?: 'Undergraduate'); ?> &bull;
+                        Tenure: <?= format_date($intern['dateassignfrom']); ?> &rarr; <?= format_date($intern['dateassignto']); ?>
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <a href="certificate.php" class="btn btn-warning fw-bold px-4 shadow-sm">
-                <i class="fas fa-certificate me-1"></i> View Certificate
+        <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+            <a href="../admin/id_card.php?id=<?= $intern['id']; ?>" class="btn btn-light text-dark fw-bold px-3 shadow-sm" target="_blank">
+                <i class="fas fa-id-badge me-1 text-success"></i> My ID Card
+            </a>
+            <a href="certificate.php" class="btn btn-warning fw-bold px-3 shadow-sm">
+                <i class="fas fa-certificate me-1"></i> Certificate
             </a>
         </div>
     </div>

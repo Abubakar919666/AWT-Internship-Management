@@ -15,11 +15,10 @@ $pageTitle = 'Supervisor Task Center';
 $pageSubtitle = 'Assign departmental assignments and review student work submissions';
 
 $user = current_user();
-$supervisorId = $user['supervisor_id'];
-if (!$supervisorId) {
-    $supRow = db_fetch_one("SELECT id FROM supervisors WHERE email = ? OR user_id = ? LIMIT 1", [$user['email'], $user['id']]);
-    if ($supRow) $supervisorId = (int)$supRow['id'];
-}
+$supContext = get_active_supervisor_context();
+$activeSup = $supContext['supervisor'];
+$isAll = $supContext['is_all'];
+$assignSupId = $isAll ? 1 : (int)$activeSup['id'];
 
 // Handle Form Submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db_query("
                     INSERT INTO tasks (intern_id, supervisor_id, title, description, priority, status, due_date, assigned_date)
                     VALUES (?, ?, ?, ?, ?, 'Pending', ?, CURDATE())
-                ", [$internId, $supervisorId, $title, $desc, $priority, $dueDate]);
+                ", [$internId, $assignSupId, $title, $desc, $priority, $dueDate]);
                 set_flash('success', "Task \"{$title}\" assigned successfully.");
             }
         } elseif ($action === 'review_submission') {
@@ -66,36 +65,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Fetch tasks for this supervisor's interns
-$tasks = db_fetch_all("
-    SELECT t.*, i.sname AS intern_name, i.sInstitute
-    FROM tasks t
-    JOIN interns i ON t.intern_id = i.id
-    WHERE i.supervisor_id = ? OR t.supervisor_id = ?
-    ORDER BY t.id DESC
-", [$supervisorId, $supervisorId]);
-
-// Fetch submissions pending review
-$submissions = db_fetch_all("
-    SELECT ts.*, t.title AS task_title, i.sname AS intern_name
-    FROM task_submissions ts
-    JOIN tasks t ON ts.task_id = t.id
-    JOIN interns i ON ts.intern_id = i.id
-    WHERE i.supervisor_id = ? OR t.supervisor_id = ?
-    ORDER BY ts.id DESC
-    LIMIT 20
-", [$supervisorId, $supervisorId]);
-
-// Fetch supervised interns list for the modal
-$interns = db_fetch_all("
-    SELECT id, sname, sInstitute 
-    FROM interns 
-    WHERE supervisor_id = ? OR Mentor LIKE ?
-    ORDER BY sname ASC
-", [$supervisorId, "%{$user['name']}%"]);
+// Fetch tasks for this supervisor's interns or all
+if ($isAll) {
+    $tasks = db_fetch_all("
+        SELECT t.*, i.sname AS intern_name, i.sInstitute
+        FROM tasks t
+        JOIN interns i ON t.intern_id = i.id
+        ORDER BY t.id DESC
+    ");
+    $submissions = db_fetch_all("
+        SELECT ts.*, t.title AS task_title, i.sname AS intern_name
+        FROM task_submissions ts
+        JOIN tasks t ON ts.task_id = t.id
+        JOIN interns i ON ts.intern_id = i.id
+        ORDER BY ts.id DESC
+        LIMIT 20
+    ");
+    $interns = db_fetch_all("
+        SELECT id, sname, sInstitute 
+        FROM interns 
+        ORDER BY sname ASC
+    ");
+} else {
+    $tasks = db_fetch_all("
+        SELECT t.*, i.sname AS intern_name, i.sInstitute
+        FROM tasks t
+        JOIN interns i ON t.intern_id = i.id
+        WHERE i.supervisor_id = ? OR t.supervisor_id = ?
+        ORDER BY t.id DESC
+    ", [$activeSup['id'], $activeSup['id']]);
+    $submissions = db_fetch_all("
+        SELECT ts.*, t.title AS task_title, i.sname AS intern_name
+        FROM task_submissions ts
+        JOIN tasks t ON ts.task_id = t.id
+        JOIN interns i ON ts.intern_id = i.id
+        WHERE i.supervisor_id = ? OR t.supervisor_id = ?
+        ORDER BY ts.id DESC
+        LIMIT 20
+    ", [$activeSup['id'], $activeSup['id']]);
+    $interns = db_fetch_all("
+        SELECT id, sname, sInstitute 
+        FROM interns 
+        WHERE supervisor_id = ? OR Mentor LIKE ?
+        ORDER BY sname ASC
+    ", [$activeSup['id'], "%{$activeSup['name']}%"]);
+}
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
+<!-- Supervisor Switcher Ribbon -->
+<?php render_supervisor_switcher_ribbon($supContext); ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>

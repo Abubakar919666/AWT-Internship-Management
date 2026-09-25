@@ -11,6 +11,8 @@ require_once __DIR__ . '/../config/helpers.php';
 
 require_admin();
 
+ensure_intern_photo_column();
+
 $pageTitle = 'Add New Intern';
 $pageSubtitle = "Register and onboard an intern to Alamgir Welfare Trust Int'l";
 $error = '';
@@ -63,18 +65,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($supRow) $mentor = $supRow['name'];
                 }
 
+                // Handle photo upload if provided
+                $uploadedPhotoPath = null;
+                if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $photoUpload = handle_file_upload($_FILES['photo_file'], 'uploads/photos');
+                    if ($photoUpload['success']) {
+                        $uploadedPhotoPath = $photoUpload['relative_path'];
+                        $photo = 1;
+                    }
+                }
+
                 $sql = "
                     INSERT INTO interns (
                         sname, Father_name, Email, Cellnumber, Address, Location, sInstitute, Degree, sterm,
                         Hours, iyear, status, confirmed, Waiting, dateassignfrom, dateassignto,
                         supervisor_id, Mentor, Department, GroupName, GroupTime, Assignedwork, Remarks,
-                        Request_Form, Photograph, CV, Recommendation_Letter, CNIC_copy, Student_ID,
+                        Request_Form, Photograph, CV, Recommendation_Letter, CNIC_copy, Student_ID, photo,
                         Organizationname, HRperson, HRdesignation, Dateofentry
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?,
                         ?, 'Nisar Ahmed', 'Coordinator', NOW()
                     )
                 ";
@@ -83,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $sname, $fatherName, $email, $cell, $address, $location, $institute, $degree, $sterm,
                     $hours, $iyear, $status, $confirmed, $waiting, $dateFrom, $dateTo,
                     $supervisorId, $mentor, $department, $groupName, $groupTime, $assignedWork, $remarks,
-                    $reqForm, $photo, $cv, $recomLetter, $cnic, $studentId, "Alamgir Welfare Trust Int'l"
+                    $reqForm, $photo, $cv, $recomLetter, $cnic, $studentId, $uploadedPhotoPath, "Alamgir Welfare Trust Int'l"
                 ]);
 
                 $newId = db_last_insert_id();
@@ -113,7 +125,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <form action="intern_add.php" method="POST" class="awt-card p-4">
+        <form action="intern_add.php" method="POST" enctype="multipart/form-data" class="awt-card p-4">
             <?= csrf_input(); ?>
 
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
@@ -259,6 +271,20 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <!-- TAB 3: Document Checklist -->
                 <div class="tab-pane fade" id="tab-docs" role="tabpanel">
+                    <!-- Photograph Upload Widget -->
+                    <div class="p-3 bg-light rounded-4 border mb-3 d-flex align-items-center gap-3 flex-wrap">
+                        <div class="rounded-3 bg-white border text-primary d-flex align-items-center justify-content-center shadow-sm" style="width:60px;height:60px;font-size:24px;">
+                            <i class="fas fa-portrait"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <label class="form-label fw-bold text-dark mb-1">
+                                <i class="fas fa-camera text-primary me-1"></i>Attach Intern Photograph (Optional)
+                            </label>
+                            <input type="file" name="photo_file" class="form-control form-control-sm" accept="image/png, image/jpeg, image/jpg, image/webp">
+                            <small class="text-muted">Upload passport/ID photo (JPG, PNG, WEBP). Will automatically mark Photograph checklist item as received.</small>
+                        </div>
+                    </div>
+
                     <p class="text-muted small mb-3">Mark the verification status of student documents submitted to the HR office:</p>
                     <div class="row g-3">
                         <div class="col-md-6">

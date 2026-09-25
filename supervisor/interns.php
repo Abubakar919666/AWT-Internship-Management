@@ -11,32 +11,47 @@ require_once __DIR__ . '/../config/helpers.php';
 
 require_supervisor();
 
-$pageTitle = 'My Assigned Interns';
-$pageSubtitle = 'Roster of interns under your supervision';
+$pageTitle = 'Supervised Interns Roster';
+$pageSubtitle = 'Roster of interns under department supervision';
 
-$user = current_user();
-$supervisorId = $user['supervisor_id'];
-if (!$supervisorId) {
-    $supRow = db_fetch_one("SELECT id FROM supervisors WHERE email = ? OR user_id = ? LIMIT 1", [$user['email'], $user['id']]);
-    if ($supRow) $supervisorId = (int)$supRow['id'];
+$supContext = get_active_supervisor_context();
+$activeSup = $supContext['supervisor'];
+$isAll = $supContext['is_all'];
+
+if ($isAll) {
+    $interns = db_fetch_all("
+        SELECT id, sname, Father_name, Email, Cellnumber, sInstitute, Degree, sterm, Mentor, supervisor_id,
+               dateassignfrom, dateassignto, Hours, status, punctuality,
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score,
+               comments
+        FROM interns
+        ORDER BY id DESC
+    ");
+} else {
+    $interns = db_fetch_all("
+        SELECT id, sname, Father_name, Email, Cellnumber, sInstitute, Degree, sterm, Mentor, supervisor_id,
+               dateassignfrom, dateassignto, Hours, status, punctuality,
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score,
+               comments
+        FROM interns
+        WHERE supervisor_id = ? OR Mentor LIKE ?
+        ORDER BY id DESC
+    ", $supContext['filter_params']);
 }
-
-$interns = db_fetch_all("
-    SELECT id, sname, Father_name, Email, Cellnumber, sInstitute, Degree, sterm,
-           dateassignfrom, dateassignto, Hours, status, punctuality,
-           (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score,
-           comments
-    FROM interns
-    WHERE supervisor_id = ? OR Mentor LIKE ?
-    ORDER BY id DESC
-", [$supervisorId, "%{$user['name']}%"]);
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- Supervisor Switcher Ribbon -->
+<?php render_supervisor_switcher_ribbon($supContext); ?>
+
 <div class="awt-table-container">
     <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0 text-dark">Total Supervised Interns: <span class="text-primary"><?= count($interns); ?></span></h5>
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fas fa-users text-primary me-2"></i>
+            <?= $isAll ? 'All Supervised Interns' : 'Interns Supervised by ' . e($activeSup['name']); ?>:
+            <span class="text-primary"><?= count($interns); ?></span>
+        </h5>
     </div>
     <div class="table-responsive">
         <table class="table awt-table">
@@ -45,6 +60,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <th>ID</th>
                     <th>Intern Name</th>
                     <th>University & Degree</th>
+                    <?php if ($isAll): ?><th>Mentor / Dept</th><?php endif; ?>
                     <th>Contact Info</th>
                     <th>Duration & Dates</th>
                     <th>Status</th>
@@ -55,9 +71,9 @@ require_once __DIR__ . '/../includes/header.php';
             <tbody>
                 <?php if (empty($interns)): ?>
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="<?= $isAll ? 9 : 8; ?>" class="text-center py-5 text-muted">
                             <i class="fas fa-users display-6 text-secondary mb-3 d-block"></i>
-                            No interns currently assigned to you.
+                            No interns found for this supervisor.
                         </td>
                     </tr>
                 <?php else: ?>
@@ -69,6 +85,14 @@ require_once __DIR__ . '/../includes/header.php';
                                 <div class="fw-semibold text-dark"><?= e($intern['sInstitute'] ?: '—'); ?></div>
                                 <small class="text-muted"><?= e($intern['Degree'] ?: '—'); ?> <?= !empty($intern['sterm']) ? '(' . e($intern['sterm']) . ')' : ''; ?></small>
                             </td>
+                            <?php if ($isAll): ?>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-user-tie text-primary me-1"></i>
+                                        <?= e($intern['Mentor'] ?: 'Unassigned'); ?>
+                                    </span>
+                                </td>
+                            <?php endif; ?>
                             <td class="small">
                                 <div><i class="fas fa-envelope text-muted me-1"></i><?= e($intern['Email'] ?: '—'); ?></div>
                                 <div><i class="fas fa-phone text-muted me-1"></i><?= e($intern['Cellnumber'] ?: '—'); ?></div>

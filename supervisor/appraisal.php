@@ -15,11 +15,9 @@ $pageTitle = 'Intern Performance Evaluation';
 $pageSubtitle = 'Record 10-criteria performance grading and mentorship comments';
 
 $user = current_user();
-$supervisorId = $user['supervisor_id'];
-if (!$supervisorId) {
-    $supRow = db_fetch_one("SELECT id FROM supervisors WHERE email = ? OR user_id = ? LIMIT 1", [$user['email'], $user['id']]);
-    if ($supRow) $supervisorId = (int)$supRow['id'];
-}
+$supContext = get_active_supervisor_context();
+$activeSup = $supContext['supervisor'];
+$isAll = $supContext['is_all'];
 
 $selectedInternId = (int)($_GET['intern_id'] ?? 0);
 $intern = null;
@@ -46,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comments = sanitize($_POST['comments'] ?? '');
 
         if ($internId > 0) {
+            $mentorName = $isAll ? $user['name'] : $activeSup['name'];
             db_query("
                 UPDATE interns SET
                     punctuality = ?, regularity = ?, productivity = ?, relationship_with_others = ?,
@@ -55,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ", [
                 $punctuality, $regularity, $productivity, $relOthers,
                 $initiative, $maturity, $confidence, $analytical,
-                $hardwork, $knowledge, $comments, $user['name'],
+                $hardwork, $knowledge, $comments, $mentorName,
                 $internId
             ]);
 
@@ -67,14 +66,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch supervisor's interns
-$internList = db_fetch_all("
-    SELECT id, sname, sInstitute, 
-           (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
-    FROM interns 
-    WHERE supervisor_id = ? OR Mentor LIKE ?
-    ORDER BY sname ASC
-", [$supervisorId, "%{$user['name']}%"]);
+// Fetch supervisor's interns or all
+if ($isAll) {
+    $internList = db_fetch_all("
+        SELECT id, sname, sInstitute, 
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
+        FROM interns 
+        ORDER BY sname ASC
+    ");
+} else {
+    $internList = db_fetch_all("
+        SELECT id, sname, sInstitute, 
+               (punctuality + regularity + productivity + relationship_with_others + Initiative + Maturity + Confidence + Analytical_ability + abilityhardword + knowledge) AS total_score
+        FROM interns 
+        WHERE supervisor_id = ? OR Mentor LIKE ?
+        ORDER BY sname ASC
+    ", [$activeSup['id'], "%{$activeSup['name']}%"]);
+}
 
 $scores = [
     'punctuality'               => $intern ? (int)$intern['punctuality'] : 8,
@@ -93,6 +101,9 @@ $gradeNow = calculate_grade($totalNow);
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
+<!-- Supervisor Switcher Ribbon -->
+<?php render_supervisor_switcher_ribbon($supContext); ?>
 
 <div class="row g-4">
     <div class="col-lg-4">

@@ -11,6 +11,8 @@ require_once __DIR__ . '/../config/helpers.php';
 
 require_admin();
 
+ensure_intern_photo_column();
+
 $pageTitle = 'Interns Directory';
 $pageSubtitle = 'Manage and filter all registered intern records';
 
@@ -182,12 +184,27 @@ require_once __DIR__ . '/../includes/header.php';
                         <tr>
                             <td class="fw-bold text-muted">#<?= $intern['id']; ?></td>
                             <td>
-                                <a href="intern_view.php?id=<?= $intern['id']; ?>" class="fw-bold text-primary text-decoration-none d-block">
-                                    <?= e($intern['sname']); ?>
-                                </a>
-                                <?php if (!empty($intern['Cellnumber'])): ?>
-                                    <small class="text-muted"><i class="fas fa-phone-alt me-1 text-secondary" style="font-size:10px;"></i><?= e($intern['Cellnumber']); ?></small>
-                                <?php endif; ?>
+                                <div class="d-flex align-items-center gap-2">
+                                    <?php 
+                                    $rowPhoto = intern_photo_url($intern['photo'] ?? null);
+                                    if ($rowPhoto): ?>
+                                        <img src="../<?= e($rowPhoto); ?>" alt="<?= e($intern['sname']); ?>" 
+                                             class="rounded-circle border shadow-sm" style="width:34px;height:34px;object-fit:cover;flex-shrink:0;">
+                                    <?php else: ?>
+                                        <div class="rounded-circle bg-light border text-primary d-flex align-items-center justify-content-center" 
+                                             style="width:34px;height:34px;font-size:14px;flex-shrink:0;">
+                                            <i class="fas fa-user-graduate"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div>
+                                        <a href="intern_view.php?id=<?= $intern['id']; ?>" class="fw-bold text-primary text-decoration-none d-block">
+                                            <?= e($intern['sname']); ?>
+                                        </a>
+                                        <?php if (!empty($intern['Cellnumber'])): ?>
+                                            <small class="text-muted"><i class="fas fa-phone-alt me-1 text-secondary" style="font-size:10px;"></i><?= e($intern['Cellnumber']); ?></small>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <div class="fw-semibold text-dark"><?= e($intern['sInstitute'] ?: '—'); ?></div>
@@ -213,6 +230,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
                                     <a href="intern_view.php?id=<?= $intern['id']; ?>" class="btn btn-light border" title="View 360° Profile"><i class="fas fa-eye text-primary"></i></a>
+                                    <a href="id_card.php?id=<?= $intern['id']; ?>" class="btn btn-light border" title="Intern ID Card" target="_blank"><i class="fas fa-id-badge text-success"></i></a>
                                     <a href="intern_edit.php?id=<?= $intern['id']; ?>" class="btn btn-light border" title="Edit Record"><i class="fas fa-edit text-dark"></i></a>
                                     <a href="certificate.php?id=<?= $intern['id']; ?>" class="btn btn-light border" title="Generate Certificate"><i class="fas fa-certificate text-warning"></i></a>
                                     <a href="offer_letter.php?id=<?= $intern['id']; ?>" class="btn btn-light border" title="Acceptance Letter"><i class="fas fa-envelope-open-text text-teal"></i></a>

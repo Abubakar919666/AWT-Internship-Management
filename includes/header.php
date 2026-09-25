@@ -60,24 +60,77 @@ $pageSubtitle = $pageSubtitle ?? '';
             </div>
             <div class="topbar-right">
                 <?php if ($currentUser): ?>
-                    <div class="dropdown">
-                        <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle fs-5 text-primary"></i>
-                            <span class="d-none d-md-inline fw-semibold"><?= e($currentUser['name']); ?></span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-capitalize d-none d-sm-inline"><?= e($currentUser['role']); ?></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                            <li class="dropdown-header">
-                                <small class="text-muted">Signed in as</small><br>
-                                <strong><?= e($currentUser['email']); ?></strong>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <?php if ($currentUser['role'] === 'intern'): ?>
-                                <li><a class="dropdown-item" href="<?= $baseUrl; ?>intern/profile.php"><i class="fas fa-id-card me-2"></i>My Profile</a></li>
-                            <?php endif; ?>
-                            <li><a class="dropdown-item text-danger" href="<?= $baseUrl; ?>logout.php"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
-                        </ul>
-                    </div>
+                    <?php 
+                    $isSupervisorArea = (strpos($_SERVER['SCRIPT_NAME'] ?? '', '/supervisor/') !== false);
+                    $supContext = ($isSupervisorArea || in_array($currentUser['role'], ['supervisor', 'admin'])) ? get_active_supervisor_context() : null;
+                    ?>
+                    <?php if ($supContext && $isSupervisorArea): ?>
+                        <div class="dropdown">
+                            <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas <?= $supContext['is_all'] ? 'fa-layer-group text-warning' : 'fa-user-tie text-primary'; ?> fs-5"></i>
+                                <span class="d-none d-md-inline fw-semibold"><?= e($supContext['supervisor']['name']); ?></span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-capitalize d-none d-sm-inline">
+                                    <?= $supContext['is_all'] ? 'All Supervisors' : 'Supervisor'; ?>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:320px;border-radius:12px;padding:8px;">
+                                <li class="dropdown-header">
+                                    <small class="text-muted">Signed in as</small><br>
+                                    <strong><?= e($currentUser['name']); ?></strong> <span class="badge bg-secondary ms-1"><?= e($currentUser['role']); ?></span><br>
+                                    <small class="text-muted"><?= e($currentUser['email']); ?></small>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li class="dropdown-header text-uppercase small fw-bold text-primary" style="font-size:11px;">
+                                    <i class="fas fa-users-cog me-1"></i> Switch Active Supervisor View
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded <?= $supContext['is_all'] ? 'active fw-bold' : ''; ?>" 
+                                       href="?switch_supervisor=all">
+                                        <span><i class="fas fa-layer-group me-2 text-warning"></i>All Supervisors (Consolidated)</span>
+                                        <?php if ($supContext['is_all']): ?><i class="fas fa-check text-primary"></i><?php endif; ?>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <?php foreach ($supContext['all_supervisors'] as $sItem): ?>
+                                    <?php $isActiveSup = (!$supContext['is_all'] && (int)$supContext['active_id'] === (int)$sItem['id']); ?>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded <?= $isActiveSup ? 'active fw-bold' : ''; ?>" 
+                                           href="?switch_supervisor=<?= $sItem['id']; ?>">
+                                            <div>
+                                                <i class="fas fa-user-tie me-2 <?= $isActiveSup ? 'text-primary' : 'text-muted'; ?>"></i>
+                                                <span class="fw-semibold"><?= e($sItem['name']); ?></span>
+                                                <small class="text-muted d-block ms-4" style="font-size:11px;">
+                                                    <?= e($sItem['department']); ?> &bull; <?= (int)$sItem['intern_count']; ?> interns
+                                                </small>
+                                            </div>
+                                            <?php if ($isActiveSup): ?><i class="fas fa-check text-primary ms-2"></i><?php endif; ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li><a class="dropdown-item text-danger py-2" href="<?= $baseUrl; ?>logout.php"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                            </ul>
+                        </div>
+                    <?php else: ?>
+                        <div class="dropdown">
+                            <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle fs-5 text-primary"></i>
+                                <span class="d-none d-md-inline fw-semibold"><?= e($currentUser['name']); ?></span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-capitalize d-none d-sm-inline"><?= e($currentUser['role']); ?></span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li class="dropdown-header">
+                                    <small class="text-muted">Signed in as</small><br>
+                                    <strong><?= e($currentUser['email']); ?></strong>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <?php if ($currentUser['role'] === 'intern'): ?>
+                                    <li><a class="dropdown-item" href="<?= $baseUrl; ?>intern/profile.php"><i class="fas fa-id-card me-2"></i>My Profile</a></li>
+                                <?php endif; ?>
+                                <li><a class="dropdown-item text-danger" href="<?= $baseUrl; ?>logout.php"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </header>

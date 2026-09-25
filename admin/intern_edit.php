@@ -20,6 +20,8 @@ if (!$intern) {
     exit;
 }
 
+ensure_intern_photo_column();
+
 $pageTitle = 'Edit Intern #' . $id;
 $pageSubtitle = 'Update record details for ' . e($intern['sname']);
 $error = '';
@@ -67,6 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Student Full Name is required.';
         } else {
             try {
+                // Check if new photo was uploaded
+                if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $photoUpload = handle_file_upload($_FILES['photo_file'], 'uploads/photos');
+                    if ($photoUpload['success']) {
+                        $newPhotoPath = $photoUpload['relative_path'];
+                        if (!empty($intern['photo']) && $intern['photo'] !== $newPhotoPath) {
+                            @unlink(__DIR__ . '/../' . ltrim($intern['photo'], '/'));
+                        }
+                        db_query("UPDATE interns SET photo = ? WHERE id = ?", [$newPhotoPath, $id]);
+                        $photo = 1;
+                        if (!empty($intern['user_id'])) {
+                            db_query("UPDATE users SET avatar = ? WHERE id = ?", [$newPhotoPath, $intern['user_id']]);
+                        }
+                    }
+                }
                 if ($supervisorId && empty($mentor)) {
                     $supRow = db_fetch_one("SELECT name FROM supervisors WHERE id = ?", [$supervisorId]);
                     if ($supRow) $mentor = $supRow['name'];
@@ -120,7 +137,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <form action="intern_edit.php?id=<?= $id; ?>" method="POST" class="awt-card p-4">
+        <form action="intern_edit.php?id=<?= $id; ?>" method="POST" enctype="multipart/form-data" class="awt-card p-4">
             <?= csrf_input(); ?>
 
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
@@ -279,6 +296,33 @@ require_once __DIR__ . '/../includes/header.php';
                 <!-- TAB 3: Document Checklist -->
                 <div class="tab-pane fade" id="tab-docs" role="tabpanel">
                     <div class="row g-3">
+                        <!-- Photograph Upload Widget -->
+                        <div class="col-12 mb-2">
+                            <div class="p-3 bg-light rounded-4 border d-flex align-items-center gap-3 flex-wrap">
+                                <?php 
+                                $editPhoto = intern_photo_url($intern['photo'] ?? null);
+                                if ($editPhoto): ?>
+                                    <img src="../<?= e($editPhoto); ?>" alt="Intern Photo" class="rounded-3 shadow-sm border" style="width:64px;height:64px;object-fit:cover;">
+                                <?php else: ?>
+                                    <div class="rounded-3 bg-white border text-primary d-flex align-items-center justify-content-center shadow-sm" style="width:64px;height:64px;font-size:24px;">
+                                        <i class="fas fa-portrait"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="flex-grow-1">
+                                    <label class="form-label fw-bold text-dark mb-1">
+                                        <i class="fas fa-camera text-primary me-1"></i>Upload / Replace Intern Photograph
+                                    </label>
+                                    <input type="file" name="photo_file" class="form-control form-control-sm" accept="image/png, image/jpeg, image/jpg, image/webp">
+                                    <small class="text-muted">Select an image (JPG, PNG, WEBP) to update the intern's photo on their profile and ID card.</small>
+                                </div>
+                                <?php if ($editPhoto): ?>
+                                    <a href="id_card.php?id=<?= $id; ?>" target="_blank" class="btn btn-outline-success btn-sm fw-bold">
+                                        <i class="fas fa-id-badge me-1"></i> View on ID Card
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
                         <div class="col-md-6">
                             <div class="checklist-card">
                                 <input class="form-check-input" type="checkbox" name="request_form" id="chk1" <?= $intern['Request_Form'] ? 'checked' : ''; ?>>
