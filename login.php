@@ -49,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['role'] === 'admin') {
                     header("Location: admin/index.php");
                 } elseif ($user['role'] === 'supervisor') {
-                    $_SESSION['active_supervisor_id'] = $user['supervisor_id'] ?? 1;
+                    // Default to "All Supervisors" consolidated view so all data is visible.
+                    // The supervisor can switch to their individual view via the ribbon.
+                    $_SESSION['active_supervisor_id'] = 'all';
                     header("Location: supervisor/index.php");
                 } else {
                     header("Location: intern/index.php");
@@ -164,34 +166,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <!-- Quick Sign-In Helper -->
-        <div class="mb-3 p-2 bg-light rounded border text-center">
-            <div class="small fw-bold text-muted mb-2 text-uppercase" style="font-size:11px;letter-spacing:0.5px;">Quick Sign-In Selector:</div>
-            <div class="d-flex justify-content-center gap-1 flex-wrap">
-                <button type="button" class="btn btn-sm btn-outline-dark py-1 px-2 fw-semibold" style="font-size:12px;" onclick="fillLogin('admin@awt.org', 'admin123')">
-                    <i class="fas fa-user-shield me-1"></i>Admin
-                </button>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 fw-semibold dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:12px;">
-                        <i class="fas fa-user-tie me-1"></i>Supervisors (<?= count($activeSupervisorsList); ?>)
-                    </button>
-                    <ul class="dropdown-menu shadow small" style="min-width:270px;border-radius:10px;">
-                        <li class="dropdown-header small fw-bold text-primary text-uppercase" style="font-size:10px;">Select Supervisor to Fill</li>
-                        <?php foreach ($activeSupervisorsList as $sItem): ?>
-                            <li>
-                                <a class="dropdown-item py-1" href="javascript:void(0)" onclick="fillLogin('<?= e($sItem['email']); ?>', 'supervisor123')">
-                                    <strong><?= e($sItem['name']); ?></strong>
-                                    <small class="text-muted d-block" style="font-size:11px;"><?= e($sItem['department']); ?></small>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 fw-semibold" style="font-size:12px;" onclick="fillLogin('917', 'intern123')">
-                    <i class="fas fa-user-graduate me-1"></i>Intern
-                </button>
-            </div>
-        </div>
 
         <form action="login.php<?= !empty($selectedRole) ? '?role=' . e($selectedRole) : ''; ?>" method="POST">
             <?= csrf_input(); ?>

@@ -532,18 +532,24 @@ function get_active_supervisor_context(): array {
         }
     }
 
-    // 4. Default fallback: All Supervisors or first supervisor
-    if (!empty($allSupervisors)) {
-        $first = $allSupervisors[0];
-        return [
-            'is_all'          => false,
-            'active_id'       => (int)$first['id'],
-            'supervisor'      => $first,
-            'all_supervisors' => $allSupervisors,
-            'filter_sql'      => '(supervisor_id = ? OR Mentor LIKE ?)',
-            'filter_params'   => [(int)$first['id'], "%{$first['name']}%"]
-        ];
-    }
+    // 4. Default fallback: All Supervisors consolidated view
+    $totalInterns = (int)(db_fetch_one("SELECT COUNT(*) AS c FROM interns")['c'] ?? 0);
+    return [
+        'is_all'          => true,
+        'active_id'       => 'all',
+        'supervisor'      => [
+            'id'          => 'all',
+            'name'        => 'All Supervisors (Consolidated View)',
+            'department'  => 'All Departments',
+            'designation' => 'Executive Management',
+            'email'       => 'All Supervisors Active',
+            'phone'       => 'All Lines',
+            'intern_count'=> $totalInterns
+        ],
+        'all_supervisors' => $allSupervisors,
+        'filter_sql'      => '1=1',
+        'filter_params'   => []
+    ];
 
     return [
         'is_all'          => true,

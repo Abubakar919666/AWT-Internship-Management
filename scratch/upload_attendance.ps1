@@ -1,0 +1,20 @@
+& curl.exe --silent --show-error --connect-timeout 30 -m 60 -u 'iternawt:e^18bD4q3' -T 'supervisor/attendance.php' 'ftp://65.21.160.27/supervisor/attendance.php'
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "SUCCESS: supervisor/attendance.php uploaded" -ForegroundColor Green
+} else {
+    Write-Host "Attempt 1 failed. Waiting 20s..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 20
+    & curl.exe --silent --show-error --connect-timeout 30 -m 60 -u 'iternawt:e^18bD4q3' -T 'supervisor/attendance.php' 'ftp://65.21.160.27/supervisor/attendance.php'
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "SUCCESS: supervisor/attendance.php uploaded" -ForegroundColor Green
+    } else {
+        Write-Host "Attempt 2 failed. Waiting 20s..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 20
+        & curl.exe --silent --show-error --connect-timeout 30 -m 60 -u 'iternawt:e^18bD4q3' -T 'supervisor/attendance.php' 'ftp://65.21.160.27/supervisor/attendance.php'
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "SUCCESS: supervisor/attendance.php uploaded" -ForegroundColor Green
+        } else {
+            Write-Host "FAILED after 3 attempts" -ForegroundColor Red
+        }
+    }
+}
